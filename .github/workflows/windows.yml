@@ -12,7 +12,7 @@ jobs:
         shell: pwsh
         run: |
           Expand-Archive clothing-store-coursework.zip project
-          Invoke-WebRequest 'https://www.apachelounge.com/download/VS18/binaries/httpd-2.4.71-261112-Win64-VS18.zip' -OutFile apache.zip
+          Copy-Item apache-win64.zip apache.zip
           Expand-Archive apache.zip .
           Invoke-WebRequest 'https://www.sqlite.org/2026/sqlite-amalgamation-3540100.zip' -OutFile sqlite.zip
           Expand-Archive sqlite.zip .
