@@ -56,3 +56,8 @@ jobs:
           Start-Sleep -Seconds 5
           python project/tests/smoke.py
           if ($LASTEXITCODE -ne 0) { Get-Content Apache24/logs/error.log -ErrorAction SilentlyContinue; exit $LASTEXITCODE }
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: forme-windows-module
+          path: Apache24/modules/mod_store.so
