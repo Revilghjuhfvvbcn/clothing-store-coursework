@@ -34,7 +34,7 @@ docker run --rm -p 8080:80 -v forme-data:/var/lib/forme forme
 Для Debian/Ubuntu установите Apache, `apache2-dev`, `g++`, `libsqlite3-dev`, `nlohmann-json3-dev`, Node.js и npm. В `frontend` выполните `npm install` и `npm run build`; разместите содержимое `frontend/dist` в DocumentRoot. Модуль можно собрать командой:
 
 ```sh
-apxs -c -S CC=g++ -Wc,-std=c++17 backend/mod_store.cpp -lsqlite3
+g++ -std=c++17 -fPIC -shared -I/usr/include/apache2 -I/usr/include/apr-1.0 backend/mod_store.cpp -lsqlite3 -o mod_store.so
 ```
 
 Полученный `.so` подключают к совместимой сборке Apache через `LoadModule store_module /путь/к/mod_store.so`. Пример настройки обработчика и переменной пути к БД приведён в `docker-apache.conf`. Каталог базы должен быть доступен на запись пользователю Apache.
