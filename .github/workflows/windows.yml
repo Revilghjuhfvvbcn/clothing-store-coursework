@@ -1,0 +1,56 @@
+name: Windows Apache test
+on: [workflow_dispatch, push]
+permissions:
+  contents: read
+jobs:
+  windows:
+    runs-on: windows-2022
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - name: Download Apache and build dependencies
+        shell: pwsh
+        run: |
+          Expand-Archive clothing-store-coursework.zip project
+          Invoke-WebRequest 'https://www.apachelounge.com/download/VS18/binaries/httpd-2.4.71-261112-Win64-VS18.zip' -OutFile apache.zip
+          Expand-Archive apache.zip .
+          Invoke-WebRequest 'https://www.sqlite.org/2026/sqlite-amalgamation-3540100.zip' -OutFile sqlite.zip
+          Expand-Archive sqlite.zip .
+          New-Item -ItemType Directory -Force json/nlohmann | Out-Null
+          Invoke-WebRequest 'https://raw.githubusercontent.com/nlohmann/json/v3.11.3/single_include/nlohmann/json.hpp' -OutFile json/nlohmann/json.hpp
+      - name: Compile Windows module
+        shell: cmd
+        run: |
+          call "C:\Program Files\Microsoft Visual Studio\2022\Enterprise\VC\Auxiliary\Build\vcvars64.bat"
+          cl /nologo /utf-8 /EHsc /std:c++17 /MD /LD /I Apache24\include /I sqlite-amalgamation-3540100 /I json project\backend\mod_store.cpp sqlite-amalgamation-3540100\sqlite3.c /link /LIBPATH:Apache24\lib libhttpd.lib libapr-1.lib libaprutil-1.lib /OUT:Apache24\modules\mod_store.so
+      - name: Start Apache and test API
+        shell: pwsh
+        run: |
+          $root = (Resolve-Path Apache24).Path.Replace('\','/')
+          $config = @"
+          ServerRoot "$root"
+          ServerName localhost
+          Listen 127.0.0.1:8080
+          LoadModule mpm_winnt_module modules/mod_mpm_winnt.so
+          LoadModule authz_core_module modules/mod_authz_core.so
+          LoadModule env_module modules/mod_env.so
+          LoadModule store_module modules/mod_store.so
+          DocumentRoot "$root/htdocs"
+          <Directory "$root/htdocs">
+            Require all granted
+          </Directory>
+          SetEnv STORE_DB_PATH "$root/store.sqlite"
+          <Location /api/>
+            SetHandler store-handler
+            Require all granted
+          </Location>
+          ErrorLog "$root/logs/error.log"
+          "@
+          Set-Content -Path Apache24/conf/test.conf -Value $config -Encoding ascii
+          Copy-Item project/frontend/index.html Apache24/htdocs/index.html
+          & Apache24/bin/httpd.exe -t -f "$root/conf/test.conf"
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          Start-Process -WindowStyle Hidden -FilePath (Resolve-Path Apache24/bin/httpd.exe) -ArgumentList @('-f', "$root/conf/test.conf")
+          Start-Sleep -Seconds 5
+          python project/tests/smoke.py
+          if ($LASTEXITCODE -ne 0) { Get-Content Apache24/logs/error.log -ErrorAction SilentlyContinue; exit $LASTEXITCODE }
