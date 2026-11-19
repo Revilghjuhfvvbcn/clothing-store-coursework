@@ -1,0 +1,22 @@
+name: Check store
+on: [push, workflow_dispatch]
+permissions:
+  contents: read
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Extract sources
+        run: unzip -q clothing-store-coursework.zip -d project
+      - name: Build Apache module and frontend
+        run: docker build -t forme project
+      - name: Start Apache
+        run: docker run -d --name forme -p 8080:80 forme
+      - name: Verify API and transactions
+        run: |
+          for i in $(seq 1 30); do curl -fsS http://localhost:8080/api/products > /dev/null && break || sleep 1; done
+          python3 project/tests/smoke.py
+      - name: Apache logs
+        if: failure()
+        run: docker logs forme || true
