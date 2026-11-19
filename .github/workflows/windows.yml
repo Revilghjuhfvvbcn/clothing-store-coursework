@@ -31,7 +31,7 @@ jobs:
           ServerRoot "$root"
           ServerName localhost
           Listen 127.0.0.1:8080
-          LoadModule mpm_winnt_module modules/mod_mpm_winnt.so
+          # Windows MPM is built in
           LoadModule authz_core_module modules/mod_authz_core.so
           LoadModule env_module modules/mod_env.so
           LoadModule store_module modules/mod_store.so
