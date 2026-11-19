@@ -34,6 +34,8 @@ jobs:
           # Windows MPM is built in
           LoadModule authz_core_module modules/mod_authz_core.so
           LoadModule env_module modules/mod_env.so
+          LoadModule dir_module modules/mod_dir.so
+          DirectoryIndex index.html
           LoadModule store_module modules/mod_store.so
           DocumentRoot "$root/htdocs"
           <Directory "$root/htdocs">
